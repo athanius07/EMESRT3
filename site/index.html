@@ -1,0 +1,95 @@
+
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>EMESRT L7/L8/L9 Tracker</title>
+  <style>
+    body { font-family: system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial,sans-serif; margin: 2rem; }
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; }
+    th { background: #f6f6f6; position: sticky; top: 0; }
+    .controls { margin-bottom: 1rem; display:flex; flex-wrap: wrap; gap: .5rem 1rem; align-items: center; }
+    .muted { color: #666; font-size: .9rem; }
+    .btn { display: inline-block; padding: .5rem .75rem; background: #0067b8; color: #fff; text-decoration: none; border-radius: 4px; }
+    details { margin-top: 1rem; }
+    summary { font-weight: 600; margin-bottom: .5rem; cursor: pointer; }
+    code { background: #f2f2f2; padding: 0 4px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>EMESRT L7/L8/L9 Tracker</h1>
+  <p class="muted">Toggle categories and click <b>Load</b>. Use <b>Download CSV</b> for export. Switch <b>Use cached (scheduled)</b> on to serve the weekly refreshed dataset from Netlify Blobs.</p>
+
+  <div class="controls">
+    <label><input type="checkbox" id="mandates" checked /> Government mandates</label>
+    <label><input type="checkbox" id="subnational" checked /> Sub‑national guidance</label>
+    <label><input type="checkbox" id="frameworks" checked /> Industry frameworks</label>
+    <label><input type="checkbox" id="cached" checked /> Use cached (scheduled)</label>
+    <button id="load" class="btn">Load</button>
+    <a id="csv" class="btn" href="#">Download CSV</a>
+  </div>
+
+  <div id="meta" class="muted"></div>
+  <table id="tbl"><thead></thead><tbody></tbody></table>
+
+  <details id="notesPanel">
+    <summary>Per‑jurisdiction notes</summary>
+    <div id="notes"></div>
+  </details>
+
+  <details id="changelogPanel">
+    <summary>Changelog</summary>
+    <div id="changelog" class="muted"></div>
+  </details>
+
+  <script>
+    function groupNotes(rows){
+      const map = new Map();
+      rows.forEach(r => {
+        const key = r['Jurisdiction/Body'];
+        const arr = map.get(key) || [];
+        if (r.Notes && !arr.includes(r.Notes)) arr.push(r.Notes);
+        map.set(key, arr);
+      });
+      return Array.from(map.entries()).map(([k, arr]) => ({jurisdiction: k, notes: arr}));
+    }
+    function renderNotes(rows){
+      const groups = groupNotes(rows);
+      const el = document.getElementById('notes');
+      if (!groups.length){ el.textContent = 'No notes available.'; return; }
+      el.innerHTML = groups.map(g => `<h4>${g.jurisdiction}</h4><ul>` + g.notes.map(n=>`<li>${n}</li>`).join('') + '</ul>').join('');
+    }
+    function renderChangelog(ch){
+      const el = document.getElementById('changelog');
+      if (!ch || !ch.length){ el.textContent = 'No changes recorded yet.'; return; }
+      el.innerHTML = ch.map(e => {
+        const add = e.delta?.added?.length || 0, rem = e.delta?.removed?.length || 0, chg = e.delta?.changed?.length || 0;
+        return `<div><b>${new Date(e.ts).toLocaleString()}</b> • rows: ${e.count} • hash: <code>${e.hash.slice(0,8)}</code> • Δ added ${add}, removed ${rem}, changed ${chg}</div>`;
+      }).join('');
+    }
+    async function run(){
+      const mand = document.getElementById('mandates').checked ? 1 : 0;
+      const subn = document.getElementById('subnational').checked ? 1 : 0;
+      const fram = document.getElementById('frameworks').checked ? 1 : 0;
+      const useCached = document.getElementById('cached').checked ? 1 : 0;
+      const url = `/.netlify/functions/emesrt?include_changelog=1&cached=${useCached}&mandates=${mand}&subnational=${subn}&frameworks=${fram}`;
+      const r = await fetch(url);
+      const j = await r.json();
+      document.getElementById('meta').textContent = `Generated: ${j.generated_at} • Rows: ${j.count}`;
+      const head = document.querySelector('#tbl thead'), body = document.querySelector('#tbl tbody');
+      head.innerHTML = ''; body.innerHTML = '';
+      if (!j.rows || !j.rows.length){ head.innerHTML = '<tr><th>No data</th></tr>'; return; }
+      const headers = Object.keys(j.rows[0]);
+      head.innerHTML = '<tr>' + headers.map(h=>`<th>${h}</th>`).join('') + '</tr>';
+      body.innerHTML = j.rows.map(row => '<tr>' + headers.map(h=>`<td>${row[h] ?? ''}</td>`).join('') + '</tr>').join('');
+      const csvUrl = `/.netlify/functions/emesrt?format=csv&cached=${useCached}&mandates=${mand}&subnational=${subn}&frameworks=${fram}`;
+      const a = document.getElementById('csv'); a.href = csvUrl; a.setAttribute('download', 'emesrt_l7l8l9.csv');
+      renderNotes(j.rows || []); renderChangelog(j.changelog || []);
+    }
+    document.getElementById('load').addEventListener('click', run);
+    run();
+  </script>
+</body>
+</html>
