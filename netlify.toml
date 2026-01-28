@@ -2,10 +2,5 @@
   publish = "site"
   functions = "netlify/functions"
 
-[[scheduled.functions]]
-  function = "refresh"
-  cron = "0 0 * * 1"
-
 [functions]
   node_bundler = "esbuild"
-  external_node_modules = ["@netlify/blobs"]

@@ -1,9 +1,7 @@
 {
-  "name": "emesrt2-netlify",
-  "version": "2.1.0",
+  "name": "emesrt2-netlify-lite",
+  "version": "1.0.0",
   "private": true,
   "type": "commonjs",
-  "dependencies": {
-    "@netlify/blobs": "^6.4.0"
-  }
+  "dependencies": {}
 }

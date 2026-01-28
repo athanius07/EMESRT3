@@ -1,28 +1,27 @@
 
-# EMESRT2 — Netlify Deploy (Fixed Blobs Initialization)
+# EMESRT2 — Netlify LITE (No cache / No Blobs)
 
-This package contains the **working** Netlify setup with Blobs initialization fixed via `connectLambda(event)` in both functions.
+Deploy this when you see "No data / undefined" to validate that functions are built and reachable without Netlify Blobs.
 
-## Upload to GitHub
-1. Extract this ZIP. You will see the folder `EMESRT2-netlify-fixed`.
-2. Open that folder and upload **its contents** (not the folder itself) to your GitHub repo **root**, so you have:
+## Deploy
+1. Upload the **contents** of this folder to your GitHub repo root:
 ```
 /site
 /netlify/functions
 netlify.toml
 package.json
 ```
+2. In Netlify Build settings, set:
+   - Publish directory: `site`
+   - Functions directory: `netlify/functions`
+   - Build command: (empty)
+   - Base directory: (empty)
+3. Trigger **Clear cache and deploy site**.
 
-## Configure Netlify
-- Publish directory: `site`
-- Functions directory: `netlify/functions`
-- Build command: *(leave empty)*
-- Base directory: *(leave empty)*
+## Test
+- JSON live: `/.netlify/functions/emesrt-lite?mandates=1&subnational=1&frameworks=1`
+- CSV  live: `/.netlify/functions/emesrt-lite?format=csv&mandates=1&subnational=1&frameworks=1`
 
-Then deploy. Verify under **Site → Functions** that you see `emesrt` and `refresh`.
+If this works, the issue in your previous build was related to Blobs/scheduled cache. We can then switch back to the full package.
 
-## Test endpoints
-- JSON live: `/.netlify/functions/emesrt?cached=0&mandates=1&subnational=1&frameworks=1`
-- CSV  live: `/.netlify/functions/emesrt?format=csv&cached=0&mandates=1&subnational=1&frameworks=1`
-
-Generated: 2026-01-28T01:07:12.730642
+Generated: 2026-01-28T01:25:35.214396
